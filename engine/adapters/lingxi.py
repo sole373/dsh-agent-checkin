@@ -61,8 +61,10 @@ import http_direct as _http  # 直连（绕环境代理），见 http_direct.py
 
 try:
     from . import cookie_util           # 作为包被导入时（checkin.py）
+    from . import cred_paths            # 凭证路径的唯一事实来源
 except ImportError:                      # 以脚本方式直接运行
     import cookie_util
+    import cred_paths
 
 API = "https://lingxi.wps.cn/api/public/v1/tasks"
 SITE = "https://lingxi.wps.cn/"
@@ -74,32 +76,44 @@ TASK_KEY = "daily_check_in"
 DEFAULT_REWARD = 100
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-COOKIE_FILE = os.path.join(_HERE, "..", "lx_cookie.txt")
+
+# 平台 id（供 cred_paths 定位凭证文件）。
+PLATFORM = "lingxi"
 
 
 # --------------------------------------------------------------------------
 # 凭证
+#
+# 路径不再由本模块自己拼——统一交给 cred_paths，与 JS 侧
+# （lib/connect/lingxi/credentials.js）用同一份规则。
+# 详见 cred_paths 模块顶部的说明：包内凭证文件会随重装被抹掉，
+# 权威位置是 <dshHome>/dsh-agent-checkin/engine/。
 # --------------------------------------------------------------------------
 def cookie_path() -> str:
-    return os.path.abspath(COOKIE_FILE)
+    """写入凭证的目标路径（主位置：用户可写、重装不丢）。"""
+    return cred_paths.write_target(PLATFORM)
+
+
+def cookie_candidates() -> list[str]:
+    """按优先级列出所有候选凭证路径（供 --inspect 展示）。"""
+    return cred_paths.candidates(PLATFORM)
 
 
 def load_cookie() -> str:
     env = os.environ.get("LX_COOKIE", "").strip()
     if env:
         return _validated(env, "环境变量 LX_COOKIE")
-    p = cookie_path()
-    if os.path.isfile(p):
-        raw = open(p, encoding="utf-8").read().strip()
-        if raw:
-            return _validated(raw, p)
+    path, raw = cred_paths.read_existing(PLATFORM)
+    if path and raw:
+        return _validated(raw, path)
     raise FileNotFoundError(
         "未配置 WPS 灵犀登录 Cookie。\n"
         "  推荐（自动采集，只需登录一次，无需手工复制 Cookie）：\n"
         "      python adapters/cdp.py --capture lingxi\n"
         "  或手工录入：\n"
         "      python adapters/lingxi.py --set-cookie \"<完整 Cookie>\"\n"
-        f"  （凭证文件位置：{p}）")
+        f"（凭证写入位置：{cookie_path()}）\n"
+        f"（已查找：{', '.join(cookie_candidates())}）")
 
 
 def _validated(raw: str, where: str) -> str:
@@ -118,7 +132,7 @@ def save_cookie(value: str) -> None:
     value = cookie_util.normalize(value, platform="WPS 灵犀",
                                   allow_bare_token=False)
     p = cookie_path()
-    os.makedirs(os.path.dirname(p), exist_ok=True)
+    cred_paths.ensure_parent(p)
     with open(p, "w", encoding="utf-8") as fh:
         fh.write(value)
     try:
@@ -324,7 +338,10 @@ def main() -> int:
         return 0
 
     if "--inspect" in argv:
-        p = cookie_path()
+        # 展示「实际命中的文件」而不是「猜测的路径」——路径解析有多处候选，
+        # 报告读的那一个，才不会让人对着空文件找原因。
+        found, _content = cred_paths.read_existing(PLATFORM)
+        p = found or cookie_path()
         try:
             cookie = load_cookie()
         except FileNotFoundError:
@@ -332,6 +349,7 @@ def main() -> int:
             print("已配置：否。推荐自动采集（只需登录一次，无需手工复制 Cookie）：")
             print("  python adapters/cdp.py --capture lingxi")
             print("或手工录入：python adapters/lingxi.py --set-cookie \"<完整 Cookie>\"")
+            print(f"已查找：{', '.join(cookie_candidates())}")
             return 0
         except ValueError as exc:
             print(f"凭证文件：{p}")

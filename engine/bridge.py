@@ -57,6 +57,13 @@ try:
 except ImportError:  # 极端情况下（adapters 被替换）退回只看空值
     def _is_placeholder(value: str) -> bool:  # type: ignore[misc]
         return not value or not value.strip()
+try:
+    # 凭证路径的**唯一事实来源**（与 JS 侧 lib/connect/lingxi/credentials.js 同规则）。
+    # 详见 adapters/cred_paths.py 顶部说明：包内凭证文件会随重装被抹掉，
+    # 权威位置是 <dshHome>/dsh-agent-checkin/engine/。
+    import cred_paths  # noqa: E402
+except ImportError:  # adapters 被替换时的兜底
+    cred_paths = None  # type: ignore[assignment]
 # 适配器目录由调用方通过 --home 传入（插件配置里可改），默认与 bridge.py 同级。
 DEFAULT_HOME = HERE
 
@@ -188,8 +195,8 @@ def normalize_result(key: str, row, spec: tuple[str, str, str, bool]) -> dict:
 # 只能由客户端自己登录后写出，插件无法代填——这里如实标成 unsupported，
 # 而不是给一个假输入框让人填了不生效。
 CREDENTIAL_KINDS: dict[str, str] = {
-    "lingxi": "cookie",   # 多字段 Cookie 串，落在 engine/lx_cookie.txt
-    "jimeng": "cookie",   # Cookie 串或裸 sessionid，落在 engine/jimeng_cookie.txt
+    "lingxi": "cookie",   # 多字段 Cookie 串，落在 <dshHome>/dsh-agent-checkin/engine/lx_cookie.txt
+    "jimeng": "cookie",   # Cookie 串或裸 sessionid，落在 <dshHome>/dsh-agent-checkin/engine/jimeng_cookie.txt
 }
 
 UNSUPPORTED_CREDENTIAL_REASON = {
@@ -211,12 +218,18 @@ CHECK_UNHEALTHY_CODES = frozenset({"AUTH_REJECTED", "FORBIDDEN", "ERROR", "EXCEP
 
 
 def cookie_file_for(key: str) -> str | None:
-    """该平台若支持手工录入凭证，返回落盘文件路径；否则 None。"""
-    if key == "lingxi":
-        return os.path.join(HERE, "lx_cookie.txt")
-    if key == "jimeng":
-        return os.path.join(HERE, "jimeng_cookie.txt")
-    return None
+    """该平台若支持手工录入凭证，返回**写入目标**路径；否则 None。
+
+    写入目标一律是主位置（`<dshHome>/dsh-agent-checkin/engine/`）——
+    包内目录可能只读，且每次重装即失效。
+    """
+    if key not in CREDENTIAL_KINDS:
+        return None
+    if cred_paths is not None:
+        return cred_paths.write_target(key)
+    # 兜底（adapters 被替换）：退回包内路径。
+    name = {"lingxi": "lx_cookie.txt", "jimeng": "jimeng_cookie.txt"}[key]
+    return os.path.join(HERE, name)
 
 
 def inspect_credential_file(key: str) -> dict:
@@ -224,23 +237,37 @@ def inspect_credential_file(key: str) -> dict:
 
     「文件存在」绝对不等于「已登录」——早期版本就把粘错的占位符原样存进去，
     检查面板还显示「已配置：是」，这是最危险的一类假报。这里一并挡住。
+
+    ⚠️ 读取要按**候选顺序**找（与适配器、JS 侧同一份规则），
+    否则会出现「引擎读得到、面板说没录」的分裂现象。
     """
-    path = cookie_file_for(key)
-    if path is None:
+    if key not in CREDENTIAL_KINDS:
         return {"status": "unsupported", "detail": UNSUPPORTED_CREDENTIAL_REASON.get(key, ""), "path": None}
-    if not os.path.isfile(path):
-        return {"status": "absent", "detail": "尚未录入凭证", "path": path}
-    try:
-        raw = open(path, encoding="utf-8").read().strip()
-    except OSError as exc:
-        return {"status": "unreadable", "detail": f"读不了凭证文件：{exc}", "path": path}
+
+    # 按候选顺序找第一个存在且非空的凭证文件。
+    if cred_paths is not None:
+        found, raw = cred_paths.read_existing(key)
+    else:
+        path = cookie_file_for(key)
+        found, raw = None, ""
+        if path and os.path.isfile(path):
+            try:
+                raw = open(path, encoding="utf-8").read().strip()
+                found = path
+            except OSError:
+                found = None
+
+    write_path = cookie_file_for(key)
+
+    if found is None:
+        return {"status": "absent", "detail": "尚未录入凭证", "path": write_path}
     if not raw:
-        return {"status": "invalid", "detail": "凭证文件是空的", "path": path}
+        return {"status": "invalid", "detail": "凭证文件是空的", "path": found}
     if _is_placeholder(raw):
-        return {"status": "invalid", "detail": "文件内容是占位符文本，不是真实 Cookie", "path": path}
+        return {"status": "invalid", "detail": "文件内容是占位符文本，不是真实 Cookie", "path": found}
     if key == "lingxi" and "=" not in raw:
-        return {"status": "invalid", "detail": "格式不对：没有 `=`，灵犀需要完整的 `k=v; k2=v2` Cookie 串", "path": path}
-    return {"status": "present", "detail": "已录入凭证（是否仍然有效见下面的实测结果）", "path": path}
+        return {"status": "invalid", "detail": "格式不对：没有 `=`，灵犀需要完整的 `k=v; k2=v2` Cookie 串", "path": found}
+    return {"status": "present", "detail": "已录入凭证（是否仍然有效见下面的实测结果）", "path": found}
 
 
 def save_credential(key: str, value: str) -> dict:
@@ -265,7 +292,10 @@ def save_credential(key: str, value: str) -> dict:
                     "detail": "格式不对：应为 `k=v; k2=v2` 形式的完整 Cookie 串"}
 
     try:
-        os.makedirs(os.path.dirname(path), exist_ok=True)
+        if cred_paths is not None:
+            cred_paths.ensure_parent(path)
+        else:
+            os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, "w", encoding="utf-8", newline="\n") as fh:
             fh.write(raw)
         try:
@@ -282,19 +312,32 @@ def save_credential(key: str, value: str) -> dict:
 
 
 def clear_credential(key: str) -> dict:
-    path = cookie_file_for(key)
-    if path is None:
+    """删除该平台已录入的凭证。
+
+    要删的是**所有候选位置**——只删写入目标的话，包内那份旧副本还在，
+    下次读取会命中它，「已删除」就成了假报。
+    """
+    if key not in CREDENTIAL_KINDS:
         return {"ok": False, "status": "unsupported",
                 "detail": UNSUPPORTED_CREDENTIAL_REASON.get(key, "该平台不支持手工录入凭证")}
+
+    if cred_paths is not None:
+        targets = list(cred_paths.candidates(key))
+    else:
+        targets = [cookie_file_for(key)]
+    write_path = cookie_file_for(key)
+
     removed = False
-    for candidate in (path, f"{path}.bak"):
-        if os.path.isfile(candidate):
+    for candidate in targets:
+        for path in (candidate, f"{candidate}.bak"):
+            if not os.path.isfile(path):
+                continue
             try:
-                os.remove(candidate)
-                removed = removed or candidate == path
+                os.remove(path)
+                removed = removed or path == write_path
             except OSError as exc:
                 return {"ok": False, "status": "error", "detail": f"删除失败：{exc}"}
-    return {"ok": True, "status": "absent", "removed": removed, "path": path}
+    return {"ok": True, "status": "absent", "removed": removed, "path": write_path}
 
 
 def check_platform(modules: dict, key: str) -> dict:

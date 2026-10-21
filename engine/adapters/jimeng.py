@@ -93,8 +93,10 @@ import http_direct as _http  # 直连（绕环境代理），见 http_direct.py
 
 try:
     from . import cookie_util           # 作为包被导入时（checkin.py）
+    from . import cred_paths            # 凭证路径的唯一事实来源
 except ImportError:                      # 以脚本方式直接运行
     import cookie_util
+    import cred_paths
 
 # --------------------------------------------------------------------------
 # 常量（与线上实现逐字一致，改动前请先确认上游是否变更）
@@ -127,32 +129,54 @@ RECEIVE_PARAMS = {
 }
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-COOKIE_FILE = os.path.join(_HERE, "..", "jimeng_cookie.txt")
-# 兼容早期版本留下的文件名
+
+# 平台 id（供 cred_paths 定位凭证文件）。
+PLATFORM = "jimeng"
+
+# 兼容早期版本留下的文件名（仍在包内 engine/ 下，保留老查找路径）。
 LEGACY_SESSION_FILE = os.path.join(_HERE, "..", "jimeng_session.txt")
 
 
 # --------------------------------------------------------------------------
 # 凭证读写
+#
+# 路径统一由 cred_paths 解析，与 JS 侧用同一份规则。
+# 详见 cred_paths 模块顶部：包内凭证文件会随重装被抹掉，
+# 权威位置是 <dshHome>/dsh-agent-checkin/engine/。
 # --------------------------------------------------------------------------
 def cookie_path() -> str:
-    return os.path.abspath(COOKIE_FILE)
+    """写入凭证的目标路径（主位置：用户可写、重装不丢）。"""
+    return cred_paths.write_target(PLATFORM)
+
+
+def cookie_candidates() -> list[str]:
+    """按优先级列出所有候选凭证路径（供 --inspect 展示）。"""
+    return cred_paths.candidates(PLATFORM) + [
+        os.path.abspath(LEGACY_SESSION_FILE)
+    ]
 
 
 def load_cookie() -> str:
     env = os.environ.get("JIMENG_COOKIE", "").strip()
     if env:
         return _validated(env, "环境变量 JIMENG_COOKIE")
-    for p in (cookie_path(), os.path.abspath(LEGACY_SESSION_FILE)):
-        if os.path.isfile(p):
-            raw = open(p, encoding="utf-8").read().strip()
-            if not raw:
-                continue
-            return _validated(raw, p)
+    path, raw = cred_paths.read_existing(PLATFORM)
+    if path and raw:
+        return _validated(raw, path)
+    # 老版本留下的裸 sessionid 文件，最后再试一次。
+    legacy = os.path.abspath(LEGACY_SESSION_FILE)
+    try:
+        if os.path.isfile(legacy):
+            raw = open(legacy, encoding="utf-8").read().strip()
+            if raw:
+                return _validated(raw, legacy)
+    except OSError:
+        pass
     raise FileNotFoundError(
         "未配置即梦凭证。请先执行：\n"
         f'  python jimeng.py --set-cookie "<完整 Cookie>"\n'
-        f"（凭证文件位置：{cookie_path()}）\n"
+        f"（凭证写入位置：{cookie_path()}）\n"
+        f"（已查找：{', '.join(cookie_candidates())}）\n"
         "若想改用浏览器方案（无需 Cookie）：python jimeng_browser.py --login")
 
 
@@ -173,7 +197,7 @@ def save_cookie(value: str) -> None:
     value = cookie_util.normalize(value, platform="即梦",
                                   allow_bare_token=True, bare_key="sessionid")
     p = cookie_path()
-    os.makedirs(os.path.dirname(p), exist_ok=True)
+    cred_paths.ensure_parent(p)
     with open(p, "w", encoding="utf-8") as fh:
         fh.write(value)
     try:  # Windows 上为 no-op，POSIX 下收紧权限
@@ -396,7 +420,9 @@ def main() -> int:
             return 0
 
     if "--inspect" in argv:
-        p = cookie_path()
+        # 展示实际命中的文件，而不是猜测路径。
+        found, _content = cred_paths.read_existing(PLATFORM)
+        p = found or cookie_path()
         try:
             cookie = load_cookie()
         except FileNotFoundError:
@@ -405,6 +431,7 @@ def main() -> int:
             print("  python adapters/cdp.py --capture jimeng")
             print("或手工录入：python adapters/jimeng.py --set-cookie \"<完整 Cookie>\"")
             print("或改用浏览器方案：python jimeng_browser.py --login")
+            print(f"已查找：{', '.join(cookie_candidates())}")
             return 0
         except ValueError as exc:
             print(f"凭证文件：{p}")

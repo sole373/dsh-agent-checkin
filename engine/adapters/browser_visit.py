@@ -32,6 +32,11 @@ import sys
 import tempfile
 import time
 
+try:
+    from . import cred_paths            # 凭证/配置目录路径的唯一事实来源
+except ImportError:                      # 以脚本方式直接运行
+    import cred_paths
+
 _HERE = os.path.dirname(os.path.abspath(__file__))
 SIGNIN_DIR = os.path.abspath(os.path.join(_HERE, ".."))
 
@@ -55,8 +60,25 @@ def find_browser() -> str:
 
 
 def profile_dir(name: str) -> str:
-    """返回某个平台专用配置目录的绝对路径（位于 AICheckin/ 下）。"""
-    return os.path.join(SIGNIN_DIR, f".{name}_profile")
+    """返回某个平台专用配置目录的绝对路径。
+
+    ⚠️ 这里存着用户的**登录态**，所以不能放在插件安装目录里——
+    `package.json` 的 `files` 白名单排除了 `engine/**/.*_profile`，
+    每次重装插件都会被抹掉，等于逼用户重新登录一次。
+
+    解析规则（与 Cookie 文件同一份逻辑，见 cred_paths）：
+      · 主位置存在 → 用主位置（`<dshHome>/dsh-agent-checkin/engine/.{name}_profile`）
+      · 否则包内存在 → 用包内（老安装/自建检出，别让用户重新登录）
+      · 都没有 → 返回主位置
+
+    注意：**创建**登录态时一律建在主位置——用 `ensure_profile_dir`。
+    """
+    return cred_paths.profile_dir(name)
+
+
+def ensure_profile_dir(name: str) -> str:
+    """返回并确保存在该平台的浏览器配置目录（一律建在主位置）。"""
+    return cred_paths.ensure_profile_dir(name)
 
 
 def profile_ready(path: str) -> bool:
