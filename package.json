@@ -1,0 +1,102 @@
+{
+  "name": "dsh-agent-checkin",
+  "displayName": "dsh-agent-checkin",
+  "description": "Aggregate daily check-ins and credit balances from the AI clients installed on this machine, with a local dashboard, same-day idempotency and persisted results. Also wires the signed-in local clients (TRAE, Qoder CN, WorkBuddy, DuMate, WPS Lingxi) into DeepSeek Harness as model providers, and writes OpenAI-compatible endpoint routes into the host pi-ai config.",
+  "version": "0.9.0",
+  "license": "MIT",
+  "type": "module",
+  "packageManager": "pnpm@11.7.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dsh-market/dsh-agent-checkin"
+  },
+  "homepage": "https://github.com/dsh-market/dsh-agent-checkin#readme",
+  "keywords": [
+    "dsh-plugin",
+    "dsh",
+    "checkin",
+    "check-in",
+    "credits",
+    "sign-in",
+    "workbuddy",
+    "trae",
+    "qoder",
+    "dumate",
+    "qianfan",
+    "lingxi",
+    "wps",
+    "qwen",
+    "model-provider"
+  ],
+  "engines": {
+    "node": "^22.19.0 || >=24.0.0"
+  },
+  "main": "lib/index.js",
+  "icon": "icons/dsh-agent-checkin.svg",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./icon": "./icons/dsh-agent-checkin.svg",
+    "./locale/*.json": "./locale/*.json",
+    "./package.json": "./package.json"
+  },
+  "dependencies": {
+    "@deepseek-ai/schemastery": "3.18.4"
+  },
+  "files": [
+    "lib",
+    "engine",
+    "!engine/**/__pycache__",
+    "!engine/**/*.pyc",
+    "!engine/**/*.pyo",
+    "!engine/**/.*_profile",
+    "!engine/*_cookie.txt",
+    "!engine/*_session.txt",
+    "icons",
+    "locale",
+    "cordis.patch.yml",
+    "LICENSE",
+    "engine/ENGINE-LICENSE.txt",
+    "engine/DISCLAIMER.md",
+    "engine/SECURITY.md",
+    "README.md",
+    "README-zh.md",
+    "README-es.md",
+    "README-pt.md",
+    "README-hi.md"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-settings-plugins"
+      ]
+    }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": ">=4.0.1-rc.1 <5.0.0 || >=4.0.2 <5.0.0",
+    "@deepseek-ai/dsh-commands": ">=0.1.7-rc.1 <0.3.0-0",
+    "@deepseek-ai/dsh-home-paths": ">=0.1.7-rc.1 <0.3.0-0",
+    "@deepseek-ai/dsh-host-webserver": ">=0.1.7-rc.1 <0.3.0-0",
+    "@deepseek-ai/dsh-tools": ">=0.1.7-rc.1 <0.3.0-0",
+    "@deepseek-ai/dsh-llm": ">=0.1.7-rc.1 <0.3.0-0",
+    "@deepseek-ai/dsh-llm-pi-ai": ">=0.1.7-rc.1 <0.3.0-0",
+    "@deepseek-ai/schemastery": ">=3.18.1-rc.1 <4.0.0 || >=3.18.2 <4.0.0",
+    "@earendil-works/pi-ai": ">=0.85.0 <0.88.0"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/dsh-llm": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-llm-pi-ai": {
+      "optional": true
+    },
+    "@earendil-works/pi-ai": {
+      "optional": true
+    }
+  }
+}

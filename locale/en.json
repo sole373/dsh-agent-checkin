@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "dsh-agent-checkin",
+    "description": "Aggregate daily check-ins and credit balances from the AI clients installed on this machine, and wire their OpenAI-compatible endpoints into the model picker."
+  }
+}

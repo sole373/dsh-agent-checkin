@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Agent Check-in">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3b82f6"/>
+      <stop offset="1" stop-color="#1d4ed8"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="28" fill="url(#bg)"/>
+  <!-- 日历底板 -->
+  <rect x="24" y="30" width="80" height="74" rx="12" fill="#ffffff" opacity="0.16"/>
+  <rect x="24" y="30" width="80" height="74" rx="12" fill="none" stroke="#ffffff" stroke-width="4"/>
+  <line x1="24" y1="52" x2="104" y2="52" stroke="#ffffff" stroke-width="4"/>
+  <line x1="46" y1="22" x2="46" y2="38" stroke="#ffffff" stroke-width="6" stroke-linecap="round"/>
+  <line x1="82" y1="22" x2="82" y2="38" stroke="#ffffff" stroke-width="6" stroke-linecap="round"/>
+  <!-- 对勾：签到完成 -->
+  <path d="M42 74 L58 90 L88 60" fill="none" stroke="#ffffff" stroke-width="10"
+        stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

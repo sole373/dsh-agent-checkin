@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "dsh-agent-checkin",
+    "description": "聚合本机已安装 AI 客户端的每日签到与积分余额，并把它们兼容 OpenAI 的端点接入模型选择器。"
+  }
+}

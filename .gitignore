@@ -1,0 +1,25 @@
+# 依赖与构建产物
+node_modules/
+*.tgz
+*.tgz.stale-*
+
+# 签到引擎里的浏览器 profile：体积巨大且是每台机器自己的运行状态，
+# 绝不能进版本库。engine/ 里的代码与适配器是要提交的，所以只排 profile。
+engine/**/.*_profile/
+engine/**/_profile/
+
+# **凭据文件**：这些是本机客户端的登录态（Cookie / 会话），
+# 一律不进版本库。规则写得宽一点，免得换个文件名就漏出去。
+engine/**/*.txt
+engine/*.txt
+!engine/ENGINE-LICENSE.txt
+!engine/DISCLAIMER.md
+!engine/SECURITY.md
+engine/**/__pycache__/
+*.pyc
+*.pyo
+
+# 本机状态与日志
+*.log
+.DS_Store
+Thumbs.db

@@ -1,0 +1,6 @@
+{
+  "//": "Scope marker — DO NOT DELETE.",
+  "//why": "The plugin root package.json declares \"type\": \"module\". These helper scripts are CommonJS (they call require('crypto')). Without this marker Node resolves the nearest package.json upward, finds the root's ESM declaration, treats wb_decrypt.js as an ES module, and the whole helper dies with 'ReferenceError: require is not defined in ES module scope'. The failure surfaces only as 'WorkBuddy token decryption failed', which looks like a credential problem rather than a module-format one.",
+  "//note": "This file is intentionally minimal. Adding \"name\" or \"main\" here would make Node treat the directory as a package boundary for resolution; only the type marker is needed.",
+  "type": "commonjs"
+}
