@@ -8,9 +8,9 @@
   "packageManager": "pnpm@11.7.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/dsh-market/dsh-agent-checkin"
+    "url": "https://github.com/sole373/dsh-agent-checkin"
   },
-  "homepage": "https://github.com/dsh-market/dsh-agent-checkin#readme",
+  "homepage": "https://github.com/sole373/dsh-agent-checkin#readme",
   "keywords": [
     "dsh-plugin",
     "dsh",
