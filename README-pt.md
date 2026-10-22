@@ -43,8 +43,16 @@ três tarefas acima — veja «[Painel de uso de tokens](#painel-de-uso-de-token
 > tem assinatura**). ④ A metade `modelRoutes` funciona, mas só
 > aceita `apiKeyEnv` estático e não tem suporte a `headers`; o perfil atual não declara nenhuma rota.
 >
-> **O PhanthyWork não é conectável (medido).** Sua porta de proxy reverso 3456 nunca escuta, e as
-> credenciais reais vivem apenas na memória do processo principal, então não há contorno possível.
+> **O PhanthyWork não é suportado de forma alguma (medido, removido na 1.1.0).** Sua porta de proxy
+> reverso 3456 nunca escuta, as credenciais reais vivem apenas na memória do processo principal, e o
+> estado de check-in só era legível por uma chave leveldb escrita pelo app — não havia rota de modelo
+> nem resgate verificável. A plataforma foi removida: sem modelos e sem check-in.
+>
+> **DuMate e QwenWork: só modelos, sem check-in.** Ambas foram retiradas do check-in na 1.1.0 porque a
+> concessão diária é disparada por *abrir o cliente*, e o estado de login só é conhecível por rastros
+> escritos pelo cliente — o plugin teria de falsificar um login ou adivinhar, e as duas coisas violam
+> a disciplina de honestidade. Abra o cliente você mesmo para receber. **As rotas de modelo não foram
+> afetadas e continuam disponíveis** (`dumate`, `qwenwork-cn`).
 
 ## Requirements
 
@@ -76,7 +84,7 @@ Ou adicione manualmente a um perfil:
 | Superfície | Como |
 | --- | --- |
 | Comando | `/checkin` — uma rodada em todas as plataformas |
-| Comando | `/checkin trae,dumate` — apenas as plataformas listadas |
+| Comando | `/checkin trae,lingxi` — apenas as plataformas listadas |
 | Comando | `/checkin --force` — ignora a idempotência do dia e resgata de novo |
 | Comando | `/checkin-status` — mostra a rodada anterior sem executá-la de novo |
 | Ferramenta | `checkin_run` — o mesmo, invocável pelo agente |
@@ -124,7 +132,7 @@ A página segue as mesmas regras de honestidade da saída por comando:
 - **Saldo desconhecido aparece como `—`, não como `0`.** Zero é uma leitura; «não foi possível ler»
   não é.
 - **O que foi lido é mostrado.** Cada plataforma guarda o saldo disponível em um campo diferente
-  (QwenWork na soma de três faixas, TRAE e WorkBuddy CN em `total_credits`). A normalização fica no
+  (TRAE e WorkBuddy CN em `total_credits`). A normalização fica no
   `bridge.py` do motor; o plugin a repete por segurança, então os saldos continuam aparecendo mesmo
   que você aponte `homeDir` para sua própria cópia do motor sem esse patch.
 - **Cada número é rotulado pela origem** — lido nesta rodada, carregado do arquivo de estado, ou
@@ -278,7 +286,7 @@ integradas — então o trabalho do dia a dia não exige a linha de comando:
   mostrados separadamente. O campo é limpo assim que o salvamento dá certo, para o segredo não ficar
   na página. As duas plataformas baseadas em perfil não têm campo para colar: a credencial delas não é
   um cookie, e colar um não serviria de nada.
-- **As outras seis plataformas não têm nem botão de login nem campo de entrada**, cada uma com o
+- **As outras quatro plataformas não têm nem botão de login nem campo de entrada**, cada uma com o
   motivo em uma linha (a credencial fica cifrada dentro do cliente, ou não existe endpoint algum para
   resgatar). A entrada não existe porque não ajudaria, não porque foi esquecida.
 - **Saldo atual por plataforma: primeiro o medido, com registro manual como reserva.** O saldo que cada
@@ -589,7 +597,7 @@ diferentes; somá-los produz um número sem significado.
 
 ### Plataformas suportadas
 
-`workbuddy`, `workbuddy_intl`, `trae`, `lingxi`, `dumate`, `qwenwork` e `phanthywork` têm uma ação
+`workbuddy`, `workbuddy_intl`, `trae`, `lingxi` têm uma ação
 de resgate real (`claiming: true`). `jimeng` e `kling` são apenas sondas de estado em
 somente leitura (`claiming: false`): informam o que a conta tem, mas o plugin nunca resgata por elas.
 
@@ -633,8 +641,9 @@ O plugin **traz** uma rota de modelo do DuMate: lê a porta e o `X-Dumate-Inapp-
 encaminha por um shim local para `http://127.0.0.1:<port>/api/qianfanproxy/v1/chat/completions`
 (o upstream já é compatível com OpenAI, então não há tradução de protocolo). Isso faz do DuMate a
 **única plataforma de modelos que exige o cliente em execução**: se você o fechar não há porta nem
-chave, e os modelos somem. O *registro* do DuMate funciona normalmente e não usa nada disso: ele lê
-o cookie que o próprio app guarda e chama os endpoints oficiais da Baidu.
+chave, e os modelos somem. O *check-in* do DuMate foi removido na 1.1.0 exatamente por isso: a
+concessão diária acontece quando você abre o cliente, então não havia uma ação de resgate separada
+que valesse a pena automatizar.
 
 ## Configuration reference
 
@@ -676,8 +685,8 @@ cópia própria de `dailyTime`, porque isso inevitavelmente derivaria em duas fo
 
 ## Design notes
 
-**Por que um subprocesso em vez de uma porta nativa?** As dez plataformas decifram suas credenciais
-de dez maneiras diferentes (Electron at-rest AES-256-GCM, Chromium OSCrypt, AES-CBC simples,
+**Por que um subprocesso em vez de uma porta nativa?** As seis plataformas decifram suas credenciais
+de seis maneiras diferentes (Electron at-rest AES-256-GCM, Chromium OSCrypt, AES-CBC simples,
 assinatura Ed25519, automação de navegador via CDP). Essas implementações já estão endurecidas e
 cobertas por execuções reais, então o plugin inclui um subconjunto selecionado desse motor
 (`engine/`, MIT, © 2026 sole373) em vez de reescrevê-lo em Node: reescrever adicionaria modos de

@@ -34,8 +34,14 @@
 > 与你的勾选——**进榜不等于你已订阅**）；④`modelRoutes` 那半边代码可用，
 > 但只支持静态 `apiKeyEnv`、且不支持 `headers`，当前 profile 里也没配任何路由。
 >
-> **PhanthyWork 不可接入（已实测）**：其反向代理端口 3456 始终不监听，真实凭证只
-> 存在于主进程内存，无旁路可走。
+> **PhanthyWork 完全不支持（已实测，1.1.0 移除）**：其反向代理端口 3456 始终不监听，真实凭证
+> 只存在于主进程内存；签到状态只能从应用自写的 leveldb 键读出——既没有模型路由，也没有
+> 可验证的领取动作，故整个平台下线：不接模型、不签签到。
+>
+> **百度搭子 DuMate、千问办公 QwenWork：只留模型，不签签到**。两者的当日额度都靠「启动客户端」
+> 触发，签到状态又只能从客户端写出的痕迹推测——插件要么伪造登录、要么靠猜，两条都违反诚实性
+> 纪律，故 1.1.0 从签到侧移除。请自行打开客户端领取。**模型接入不受影响，照常提供**
+> （`dumate`、`qwenwork-cn`）。
 
 ## Requirements
 
@@ -67,7 +73,7 @@ dsh plugin install ./dsh-agent-checkin
 | 入口 | 用法 |
 | --- | --- |
 | 命令 | `/checkin` —— 全部平台跑一轮 |
-| 命令 | `/checkin trae,dumate` —— 只跑列出的平台 |
+| 命令 | `/checkin trae,lingxi` —— 只跑列出的平台 |
 | 命令 | `/checkin --force` —— 绕过当天的幂等保护，强制重新领取 |
 | 命令 | `/checkin-status` —— 查看上一轮结果，不重新执行 |
 | 工具 | `checkin_run` —— 同一件事，可由 agent 调用 |
@@ -306,7 +312,7 @@ HTTP 端点 `GET /dsh-agent-checkin/model-rank` 返回同一份数据；`?refres
   Cookie（例如自动化窗口起不来的环境）。保存后会立刻跑一次只读验证，结果显示在输入框下方——
   **「已保存」不等于「能签到」**，这两件事分开显示。保存成功后输入框立即清空，凭证不会在页面
   上多留一秒。profile 型的两个平台没有输入框可给：它们的凭证不是一份 Cookie，粘贴没有意义。
-- **其余六个平台没有登录按钮也没有输入框**，每个都附一句原因（凭证在客户端本地加密存储，或者
+- **其余四个平台没有登录按钮也没有输入框**，每个都附一句原因（凭证在客户端本地加密存储，或者
   压根没有可调用的领取接口）。这里不给入口，是因为给了也没有用，不是忘了做。
 - **各平台当前积分，实测优先、可手动补记。** 逐行列出每个平台当前显示的积分：引擎上一轮实测读到的
   值标「实测」（并注明来自哪个接口字段）；引擎读不到的平台（比如没有余额接口的）可以手动填一个
@@ -543,7 +549,7 @@ HTTP 端点 `GET /dsh-agent-checkin/model-rank` 返回同一份数据；`?refres
 
 ### 支持的平台
 
-`workbuddy`、`workbuddy_intl`、`trae`、`lingxi`、`dumate`、`qwenwork`、`phanthywork` 有真实的
+`workbuddy`、`workbuddy_intl`、`trae`、`lingxi` 有真实的
 领取动作（`claiming: true`）。`jimeng`、`kling` 只是只读状态探针（`claiming: false`）
 ——如实报告账号里有什么，但插件从不替它们领取。
 
@@ -577,7 +583,8 @@ log\desktop-main\Main.log
 插件**已经**接上 DuMate 的模型路由：读日志拿到本机端口与 `X-Dumate-Inapp-Key`，再用本地 shim 转发到
 `http://127.0.0.1:<port>/api/qianfanproxy/v1/chat/completions`（上游本身就是 OpenAI 兼容，零协议转换）。
 因此 DuMate 是**唯一强制要求客户端常驻**的模型平台——客户端关了就没有端口和 key，模型必然不可用。
-DuMate 的签到则完全正常、且与此无关：它读客户端自己存的 cookie，调百度官方接口。
+DuMate 的签到已在 1.1.0 移除，原因正在于此：当日额度本来就是「开客户端」这个过程发放的，
+没有值得自动化的独立领取动作。
 
 ## Configuration reference
 
@@ -617,7 +624,7 @@ DuMate 的签到则完全正常、且与此无关：它读客户端自己存的 
 
 ## Design notes
 
-**为什么走子进程而不是原生移植？** 十个平台的凭证解密方式各不相同（Electron at-rest
+**为什么走子进程而不是原生移植？** 六个平台的凭证解密方式各不相同（Electron at-rest
 AES-256-GCM、Chromium OSCrypt、纯 AES-CBC、Ed25519 签名、CDP 浏览器自动化）。这些实现
 已经被真机跑过、打磨过，所以插件选择内嵌这份引擎的精选子集（`engine/`，MIT，© 2026 sole373）
 而不是在 Node 里重写一遍——重写只会增加失败面，不会减少任何一块。插件的职责是调度与呈现。

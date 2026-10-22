@@ -41,8 +41,16 @@ from this machine only). It touches none of the above — see
 > ④ The `modelRoutes` half works, but supports static `apiKeyEnv` only and has no `headers`
 > support; the current profile declares no routes.
 >
-> **PhanthyWork is not wireable (measured).** Its reverse-proxy port 3456 never listens, and the
-> real credentials live only in the main process's memory, so there is no bypass.
+> **PhanthyWork is not supported at all (measured, and removed in 1.1.0).** Its reverse-proxy port
+> 3456 never listens, the real credentials live only in the main process's memory, and the check-in
+> state is readable only from an app-written leveldb key — so there was neither a model route nor a
+> verifiable claim. The platform has been dropped: no model wiring, no check-in.
+>
+> **DuMate and QwenWork: models only, no check-in.** Both were dropped from the check-in side in
+> 1.1.0 because their daily grant is triggered by *launching the client*, and their sign-in state is
+> only knowable from client-written traces — the plugin cannot claim for them without either faking
+> a login or guessing. Open the client yourself to collect the daily grant. Their **model routes are
+> unaffected and still shipped** (`dumate`, `qwenwork-cn`).
 
 ## Requirements
 
@@ -74,7 +82,7 @@ Or add it to a profile manually:
 | Surface | How |
 | --- | --- |
 | Command | `/checkin` — one round across all platforms |
-| Command | `/checkin trae,dumate` — only the listed platforms |
+| Command | `/checkin trae,lingxi` — only the listed platforms |
 | Command | `/checkin --force` — ignore the same-day idempotency guard and claim again |
 | Command | `/checkin-status` — show the previous round without re-running |
 | Tool | `checkin_run` — the same thing, callable by the agent |
@@ -120,7 +128,7 @@ The page follows the same honesty rules as the command output:
   them produces a number that means nothing. The page says so instead of showing one.
 - **Unknown balances show `—`, not `0`.** Zero is a reading; "could not read it" is not.
 - **What was read gets shown.** Each platform keeps its usable balance under a different field name
-  (QwenWork under a sum of three wallet tiers, TRAE and WorkBuddy CN under `total_credits`).
+  (TRAE and WorkBuddy CN under `total_credits`).
   Normalisation lives in the engine's `bridge.py`; the plugin repeats it defensively, so balances
   still render if you point `homeDir` at your own copy of the engine without that patch.
 - **Every number is labelled by origin** — live this round, loaded from the state file, or absent.
@@ -369,7 +377,7 @@ sections — so the day-to-day work does not need the command line:
   field is cleared the moment the save succeeds, so the secret never lingers on the page. The two
   profile-based platforms have no input field to offer: their credential is not a cookie, and
   pasting one would do nothing.
-- **The other six platforms have neither a login button nor an input field**, each with a one-line
+- **The other four platforms have neither a login button nor an input field**, each with a one-line
   reason (the credential is stored encrypted inside the client, or there is no claimable endpoint at
   all). The entry point is absent because it would not help, not because it was forgotten.
 - **Per-platform current balance, measured first with manual entry as fallback.** Each platform's
@@ -673,7 +681,7 @@ currencies; adding them produces a number with no meaning.
 
 ### Platforms supported
 
-`workbuddy`, `workbuddy_intl`, `trae`, `lingxi`, `dumate`, `qwenwork`, `phanthywork` have a real
+`workbuddy`, `workbuddy_intl`, `trae`, `lingxi` have a real
 claim action (`claiming: true`). `jimeng`, `kling` are read-only status probes
 (`claiming: false`) — they report what the account holds but the plugin never claims for them.
 
@@ -756,12 +764,13 @@ The plugin **does** ship a DuMate model route: it reads the port and `X-Dumate-I
 logs and forwards through a local shim to `http://127.0.0.1:<port>/api/qianfanproxy/v1/chat/completions`
 (the upstream is OpenAI-compatible, so no protocol translation is needed). That makes DuMate the
 **only model platform that hard-requires the client to stay running** — close the client and there
-is no port and no key, so the models are gone. DuMate *check-in* works fine and uses none of this:
-it reads the app's own stored cookie and calls Baidu's official endpoints.
+is no port and no key, so the models are gone. DuMate *check-in* was removed in 1.1.0 for exactly
+this reason — its daily grant happens when you launch the client anyway, so there is no separate
+claim action worth automating.
 
 ## Design notes
 
-**Why a subprocess instead of a native port?** The ten platforms decrypt their credentials in ten
+**Why a subprocess instead of a native port?** The six platforms decrypt their credentials in six
 different ways (Electron at-rest AES-256-GCM, Chromium OSCrypt, plain AES-CBC, Ed25519 signing,
 CDP browser automation). Those implementations are already hardened and covered by real runs.
 Rewriting them in Node would add failure modes without removing any. The plugin's job is

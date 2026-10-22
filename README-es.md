@@ -43,8 +43,16 @@ las tres cosas anteriores — véase «[Panel de uso de tokens](#panel-de-uso-de
 > significa que ya esté suscrito**). ④ La mitad de `modelRoutes` funciona, pero solo admite
 > `apiKeyEnv` estático y no tiene soporte de `headers`; el perfil actual no declara ninguna ruta.
 >
-> **PhanthyWork no es conectable (medido).** Su puerto de proxy inverso 3456 nunca escucha, y las
-> credenciales reales solo viven en la memoria del proceso principal, así que no hay rodeo posible.
+> **PhanthyWork no está soportado en absoluto (medido, retirado en 1.1.0).** Su puerto de proxy inverso
+> 3456 nunca escucha, las credenciales reales solo viven en la memoria del proceso principal, y el
+> estado del check-in solo era legible desde una clave leveldb escrita por la app — no había ni ruta
+> de modelos ni reclamo verificable. La plataforma se ha retirado: sin modelos y sin check-in.
+>
+> **DuMate y QwenWork: solo modelos, sin check-in.** Ambas se retiraron del check-in en 1.1.0 porque la
+> concesión diaria se dispara al *abrir el cliente*, y el estado de sesión solo es cognoscible por los
+> rastros que escribe el cliente — el plugin tendría que falsificar un inicio de sesión o adivinar, y
+> ambas cosas violan la disciplina de honestidad. Abre tú mismo el cliente para recibirla. **Las rutas
+> de modelos no se ven afectadas y siguen disponibles** (`dumate`, `qwenwork-cn`).
 
 ## Requirements
 
@@ -76,7 +84,7 @@ O añádalo manualmente a un perfil:
 | Superficie | Cómo |
 | --- | --- |
 | Comando | `/checkin` — una ronda en todas las plataformas |
-| Comando | `/checkin trae,dumate` — solo las plataformas indicadas |
+| Comando | `/checkin trae,lingxi` — solo las plataformas indicadas |
 | Comando | `/checkin --force` — ignora la idempotencia del día y vuelve a reclamar |
 | Comando | `/checkin-status` — muestra la ronda anterior sin volver a ejecutarla |
 | Herramienta | `checkin_run` — lo mismo, invocable por el agente |
@@ -124,7 +132,7 @@ La página sigue las mismas reglas de honestidad que la salida por comandos:
 - **Un saldo desconocido se muestra como `—`, no como `0`.** Cero es una lectura; «no se pudo
   leer» no lo es.
 - **Lo que se leyó se muestra.** Cada plataforma guarda su saldo disponible bajo un campo distinto
-  (QwenWork en la suma de tres tramos, TRAE y WorkBuddy CN en `total_credits`). La normalización
+  (TRAE y WorkBuddy CN en `total_credits`). La normalización
   vive en `bridge.py` del motor; el plugin la repite por seguridad, así que los saldos se siguen
   mostrando aunque apuntes `homeDir` a tu propia copia del motor sin ese parche.
 - **Cada cifra lleva su origen**: leída en esta ronda, cargada del archivo de estado, o ausente.
@@ -404,7 +412,7 @@ integradas — así que el trabajo diario no exige la línea de comandos:
   muestran por separado. El campo se vacía en cuanto el guardado tiene éxito, para que el secreto no se
   quede en la página. Las dos plataformas basadas en perfil no tienen campo donde pegar: su credencial
   no es una cookie, y pegarla no serviría de nada.
-- **Las otras seis plataformas no tienen ni botón de inicio de sesión ni campo de entrada**, cada una
+- **Las otras cuatro plataformas no tienen ni botón de inicio de sesión ni campo de entrada**, cada una
   con su motivo en una línea (la credencial está cifrada dentro del cliente, o no hay ningún endpoint
   al que reclamar). La entrada no está porque no serviría, no porque se haya olvidado.
 - **Saldo actual por plataforma: primero lo medido, con entrada manual de respaldo.** Se lista el saldo
@@ -719,7 +727,7 @@ distintas; sumarlos produce un número sin significado.
 
 ### Plataformas admitidas
 
-`workbuddy`, `workbuddy_intl`, `trae`, `lingxi`, `dumate`, `qwenwork` y `phanthywork` tienen una
+`workbuddy`, `workbuddy_intl`, `trae`, `lingxi` tienen una
 acción de reclamo real (`claiming: true`). `jimeng` y `kling` son solo sondas de estado de
 solo lectura (`claiming: false`): informan de lo que tiene la cuenta, pero el plugin nunca reclama
 por ellas.
@@ -765,8 +773,9 @@ El plugin **sí** distribuye una ruta de modelo de DuMate: lee el puerto y `X-Du
 los logs y reenvía por un shim local a `http://127.0.0.1:<port>/api/qianfanproxy/v1/chat/completions`
 (el upstream ya es compatible con OpenAI, así que no hace falta traducir el protocolo). Eso hace de
 DuMate la **única plataforma de modelos que exige que el cliente siga abierto**: si lo cierras no
-hay puerto ni clave, y los modelos desaparecen. El *registro* de DuMate funciona perfectamente y no
-usa nada de esto: lee la cookie que la propia app guarda y llama a los endpoints oficiales de Baidu.
+hay puerto ni clave, y los modelos desaparecen. El *check-in* de DuMate se retiró en 1.1.0 justo por
+esto: la concesión diaria ocurre al abrir el cliente, así que no había una acción de reclamo aparte
+que mereciera automatizarse.
 
 ## Configuration reference
 
@@ -808,8 +817,8 @@ propia copia de `dailyTime`, porque eso acabaría derivando en dos fuentes de ve
 
 ## Design notes
 
-**¿Por qué un subproceso en lugar de un port nativo?** Las diez plataformas descifran sus
-credenciales de diez maneras distintas (Electron at-rest AES-256-GCM, Chromium OSCrypt, AES-CBC
+**¿Por qué un subproceso en lugar de un port nativo?** Las seis plataformas descifran sus
+credenciales de seis maneras distintas (Electron at-rest AES-256-GCM, Chromium OSCrypt, AES-CBC
 simple, firma Ed25519, automatización de navegador por CDP). Esas implementaciones ya están
 endurecidas y cubiertas por ejecuciones reales, así que el plugin incluye un subconjunto cuidado de
 ese motor (`engine/`, MIT, © 2026 sole373) en lugar de reescribirlo en Node: reescribir añadiría
