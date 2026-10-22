@@ -2,7 +2,7 @@
   "name": "@sole373/dsh-agent-checkin",
   "displayName": "dsh-agent-checkin",
   "description": "Aggregate daily check-ins and credit balances from the AI clients installed on this machine, with a local dashboard, same-day idempotency and persisted results. Also wires the signed-in local clients (TRAE, Qoder CN, WorkBuddy, DuMate, WPS Lingxi) into DeepSeek Harness as model providers, and writes OpenAI-compatible endpoint routes into the host pi-ai config.",
-  "version": "0.9.0",
+  "version": "1.0.0",
   "license": "MIT",
   "type": "module",
   "packageManager": "pnpm@11.7.0",
