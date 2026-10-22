@@ -1,6 +1,10 @@
 # Register the check-in hub without changing the profile's default model.
 # The plugin reuses the credentials that the installed desktop clients already
 # hold; no separate OAuth flow is started and no credential is copied off-box.
+#
+# The `id` stays un-scoped on purpose: it is the host's internal entry key, and
+# changing it would orphan any state the user already has under it. The `name`
+# carries the npm scope, matching how scoped bundles register themselves.
 - insert:
     - id: dsh-agent-checkin
-      name: dsh-agent-checkin
+      name: '@sole373/dsh-agent-checkin'
