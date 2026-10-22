@@ -370,7 +370,7 @@ integradas — así que el trabajo diario no exige la línea de comandos:
   - **Basadas en cookie (WPS Lingxi, 即梦)**: lanza una ventana de navegador aparte en esta máquina;
     tú inicias sesión con normalidad y el plugin recoge la cookie, la verifica una vez y solo entonces
     la escribe en disco. Sin F12, sin copiar cabeceras, sin parámetros de línea de comandos.
-  - **Basadas en perfil (Coze, Kling)**: estas dos plataformas entregan su beneficio diario a cambio de
+  - **Basadas en perfil (Kling)**: esta plataforma entrega su beneficio diario a cambio de
     *una visita con la sesión iniciada*, y la credencial es un perfil de navegador entero, no una
     cookie suelta. El botón también abre su propia ventana; tras iniciar sesión cierras esa ventana
     tú mismo, y solo entonces el plugin ejecuta una verificación de solo lectura de la sesión: pasarla
@@ -720,7 +720,7 @@ distintas; sumarlos produce un número sin significado.
 ### Plataformas admitidas
 
 `workbuddy`, `workbuddy_intl`, `trae`, `lingxi`, `dumate`, `qwenwork` y `phanthywork` tienen una
-acción de reclamo real (`claiming: true`). `jimeng`, `coze` y `kling` son solo sondas de estado de
+acción de reclamo real (`claiming: true`). `jimeng` y `kling` son solo sondas de estado de
 solo lectura (`claiming: false`): informan de lo que tiene la cuenta, pero el plugin nunca reclama
 por ellas.
 

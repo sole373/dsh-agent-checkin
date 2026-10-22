@@ -283,7 +283,7 @@ HTTP 端点 `GET /dsh-agent-checkin/model-rank` 返回同一份数据；`?refres
   - **Cookie 型（WPS 灵犀、即梦）**：点下去在本机拉起一个独立的浏览器窗口，你在里面正常登录，
     插件自己把 Cookie 收下来、验证一次、通过才写盘。不用再开 F12 翻请求头复制 Cookie，也不用记
     命令行参数。
-  - **profile 型（扣子 Coze、可灵 AI）**：这两个平台的福利靠「以登录状态访问一次」来领，凭证是
+  - **profile 型（可灵 AI）**：这个平台的福利靠「以登录状态访问一次」来领，凭证是
     整个浏览器配置目录而不是一份 Cookie。点按钮同样弹独立窗口，你登录后**亲手关闭这个窗口**，
     关闭后插件才用只读核验跑一遍登录态，通过才算数。
   - 这个按钮是**普通按钮，点下去发一个 POST**，页面不会跳走，宿主界面也不会被顶掉。这一点值得
@@ -544,7 +544,7 @@ HTTP 端点 `GET /dsh-agent-checkin/model-rank` 返回同一份数据；`?refres
 ### 支持的平台
 
 `workbuddy`、`workbuddy_intl`、`trae`、`lingxi`、`dumate`、`qwenwork`、`phanthywork` 有真实的
-领取动作（`claiming: true`）。`jimeng`、`coze`、`kling` 只是只读状态探针（`claiming: false`）
+领取动作（`claiming: true`）。`jimeng`、`kling` 只是只读状态探针（`claiming: false`）
 ——如实报告账号里有什么，但插件从不替它们领取。
 
 ### 引擎会往哪里写

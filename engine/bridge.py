@@ -80,7 +80,6 @@ PLATFORM_SPECS: dict[str, tuple[str, str, str, bool]] = {
     "qwenwork": ("qwenwork", "千问办公 QwenWork", "积分", True),
     "phanthywork": ("phanthywork", "PhanthyWork", "积分", True),
     "jimeng": ("jimeng", "即梦 AI", "灵感值", False),
-    "coze": ("coze", "扣子 Coze", "积分", False),
     "kling": ("kling", "可灵 AI", "灵感值", False),
 }
 
@@ -206,7 +205,6 @@ UNSUPPORTED_CREDENTIAL_REASON = {
     "dumate": "凭证是 AES-256-GCM 加密的 Cookie，由 DuMate 客户端登录后写出",
     "qwenwork": "凭证由千问办公客户端登录后写出，插件不代填",
     "phanthywork": "凭证在 WebView2 的 leveldb 里，由 PhanthyWork 客户端登录后写出",
-    "coze": "本插件没有可调用的领取接口，录凭证也没有用",
     "kling": "本插件没有可调用的领取接口，录凭证也没有用",
 }
 
@@ -458,7 +456,7 @@ def main() -> int:
     # 按路径加载适配器包，避免与 PyPI 同名包冲突。
     sys.path.insert(0, home)
     try:
-        from adapters import (coze, dumate, jimeng, kling, lingxi,  # noqa: E402
+        from adapters import (dumate, jimeng, kling, lingxi,  # noqa: E402
                               phanthywork, qwenwork, trae, workbuddy,
                               workbuddy_intl)
     except Exception as exc:  # noqa: BLE001
@@ -470,7 +468,6 @@ def main() -> int:
         "trae": trae,
         "lingxi": lingxi,
         "jimeng": jimeng,
-        "coze": coze,
         "qwenwork": qwenwork,
         "phanthywork": phanthywork,
         "kling": kling,

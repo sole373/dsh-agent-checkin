@@ -534,8 +534,8 @@ def main() -> int:
 
     if "--selftest" in argv:
         i = argv.index("--selftest")
-        profile = argv[i + 1] if i + 1 < len(argv) else bv.profile_dir("coze")
-        url = argv[i + 2] if i + 2 < len(argv) else "https://www.coze.cn/"
+        profile = argv[i + 1] if i + 1 < len(argv) else bv.profile_dir("kling")
+        url = argv[i + 2] if i + 2 < len(argv) else "https://klingai.com/app/"
         return _selftest(profile, url)
 
     print(__doc__)

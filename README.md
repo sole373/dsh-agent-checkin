@@ -336,7 +336,7 @@ sections — so the day-to-day work does not need the command line:
   - **Cookie-based (WPS Lingxi, 即梦)**: launches a separate browser window on this machine; you log
     in normally and the plugin collects the cookie, verifies it once, and only then writes it to disk.
     No F12, no copying request headers, no command-line flags.
-  - **Profile-based (Coze, Kling)**: these two platforms hand out their daily perk for *one signed-in
+  - **Profile-based (Kling)**: this platform hands out its daily perk for *one signed-in
     visit*, and the credential is an entire browser profile rather than a single cookie. The button
     opens its own window too; after signing in you close that window yourself, and only then does the
     plugin run a read-only verification of the session — passing it is what counts as logged in.
@@ -674,7 +674,7 @@ currencies; adding them produces a number with no meaning.
 ### Platforms supported
 
 `workbuddy`, `workbuddy_intl`, `trae`, `lingxi`, `dumate`, `qwenwork`, `phanthywork` have a real
-claim action (`claiming: true`). `jimeng`, `coze`, `kling` are read-only status probes
+claim action (`claiming: true`). `jimeng`, `kling` are read-only status probes
 (`claiming: false`) — they report what the account holds but the plugin never claims for them.
 
 ## Configuration reference
