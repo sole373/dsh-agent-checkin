@@ -4,6 +4,9 @@
   "description": "Aggregate daily check-ins and credit balances from the AI clients installed on this machine, with a local dashboard, same-day idempotency and persisted results. Also wires the signed-in local clients (TRAE, Qoder CN, WorkBuddy, DuMate, WPS Lingxi) into DeepSeek Harness as model providers, and writes OpenAI-compatible endpoint routes into the host pi-ai config.",
   "version": "1.1.1",
   "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
   "packageManager": "pnpm@11.7.0",
   "repository": {
@@ -46,6 +49,8 @@
   },
   "files": [
     "lib",
+    "!lib/**/*.bak_*",
+    "!lib/**/*.bak",
     "engine",
     "!engine/**/__pycache__",
     "!engine/**/*.pyc",

@@ -23,3 +23,8 @@ engine/**/__pycache__/
 *.log
 .DS_Store
 Thumbs.db
+
+# 改代码前顺手留下的手工备份（形如 selection.js.bak_trae_global_remove_20261022）：
+# 一次就能靠 git 恢复的东西，不该占仓库，也不该被打进 npm 包。
+lib/**/*.bak_*
+lib/**/*.bak
