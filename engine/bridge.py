@@ -17,8 +17,8 @@
       "source": "live",            # live = 真的调了平台接口；dry_run = 未领取
       "results": [
         {
-          "platform": "dumate",    # 稳定 id，与 --only 的取值一致
-          "name": "百度搭子 DuMate",  # 适配器自报的中文展示名（原样透传）
+          "platform": "trae",      # 稳定 id，与 --only 的取值一致
+          "name": "TRAE Work",     # 适配器自报的中文展示名（原样透传）
           "claiming": true,        # 是否存在真实领取动作
           "unit": "积分",
           "result": "ALREADY",     # OK|ALREADY|DONE|DRY_RUN|READONLY|INACTIVE|
@@ -37,7 +37,7 @@
 
     python bridge.py                 # 真实签到
     python bridge.py --dry-run       # 只查状态，不领取
-    python bridge.py --only trae,dumate
+    python bridge.py --only trae,lingxi
 """
 
 from __future__ import annotations
@@ -76,9 +76,6 @@ PLATFORM_SPECS: dict[str, tuple[str, str, str, bool]] = {
     "workbuddy_intl": ("workbuddy_intl", "WorkBuddy（国际版）", "credits", True),
     "trae": ("trae", "TRAE Work", "积分", True),
     "lingxi": ("lingxi", "WPS 灵犀", "积分", True),
-    "dumate": ("dumate", "百度搭子 DuMate", "积分", True),
-    "qwenwork": ("qwenwork", "千问办公 QwenWork", "积分", True),
-    "phanthywork": ("phanthywork", "PhanthyWork", "积分", True),
     "jimeng": ("jimeng", "即梦 AI", "灵感值", False),
     "kling": ("kling", "可灵 AI", "灵感值", False),
 }
@@ -89,10 +86,9 @@ SUCCESS_CODES = frozenset({"OK", "ALREADY", "DONE"})
 # 各平台「可用余额」的等价字段名，按优先级排列。
 #
 # 为什么需要这张表：适配器各自从不同的接口取数，可用余额的字段名五花八门
-# （千问是 daily+monthly+longterm 三档合计的 total，TRAE 是 total_credits，
-# WorkBuddy 国内版是签到接口顺带返回的 total_credits）。而插件侧只看
-# ``balance`` 一个字段——若这里不归一，看板会把「读到了但字段没对上」显示成
-# 「本次未取到余额」，等于把真实数据报成缺失，违反诚实性纪律。
+# （TRAE 是 total_credits，WorkBuddy 国内版是签到接口顺带返回的 total_credits）。
+# 而插件侧只看 ``balance`` 一个字段——若这里不归一，看板会把「读到了但字段没对上」
+# 显示成「本次未取到余额」，等于把真实数据报成缺失，违反诚实性纪律。
 #
 # 只放**确实等价于可用余额**的字段，宁可留 None 也不能拿错字段凑数：
 #   - trae 的 total_credits 是**剩余**额度（limit - used），不是总额；
@@ -100,10 +96,7 @@ SUCCESS_CODES = frozenset({"OK", "ALREADY", "DONE"})
 #   - workbuddy 的余额来自签到接口的 total_credits；billing 的
 #     get-user-resource-summary 那条路在 run() 里没被调用（parse_balance 存在
 #     但未接入），所以不列 billing 的字段。
-#   - phanthywork 无本地余额接口（云端需 Ed25519 签名，本项目不绕过），
-#     刻意留空，由适配器自报的 balance_note 说明原因。
 BALANCE_FALLBACK_FIELDS: dict[str, tuple[str, ...]] = {
-    "qwenwork": ("total",),          # daily_credits + monthly_credits + longterm_credits
     "trae": ("total_credits",),      # 剩余额度
     "workbuddy": ("total_credits",),  # 签到接口顺带返回
 }
@@ -163,7 +156,7 @@ def normalize_result(key: str, row, spec: tuple[str, str, str, bool]) -> dict:
     #
     # 适配器没直接给 balance 时，按 BALANCE_FALLBACK_FIELDS 从等价字段取一次。
     # 这条兜底只补「字段名对不上」，不改变任何适配器自己给出的判断：适配器明确
-    # 报 balance=None 且没有等价字段的（如 phanthywork），这里仍然是 None。
+    # 报 balance=None 且没有等价字段的（如 kling、jimeng），这里仍然是 None。
     balance = out.get("balance")
     source_field = "balance" if _is_number(balance) else ""
     if not source_field:
@@ -189,8 +182,8 @@ def normalize_result(key: str, row, spec: tuple[str, str, str, bool]) -> dict:
 # 凭证面：哪些平台支持在设置面板里录入凭证，以及怎么「只验证不领取」
 # ---------------------------------------------------------------------------
 #
-# 关键事实：十个平台里**只有灵犀和即梦**的凭证是用户可录入的 Cookie。其余八个
-# 的凭证来自各自桌面客户端本地存储（Electron at-rest / AES-GCM / WebView2），
+# 关键事实：六个平台里**只有灵犀和即梦**的凭证是用户可录入的 Cookie。其余四个
+# 的凭证来自各自桌面客户端本地存储（Electron at-rest / AES-CBC），
 # 只能由客户端自己登录后写出，插件无法代填——这里如实标成 unsupported，
 # 而不是给一个假输入框让人填了不生效。
 CREDENTIAL_KINDS: dict[str, str] = {
@@ -202,9 +195,6 @@ UNSUPPORTED_CREDENTIAL_REASON = {
     "workbuddy": "凭证是客户端本地存储的 Electron at-rest 密文，必须由 WorkBuddy 客户端登录后写出",
     "workbuddy_intl": "凭证由 WorkBuddy 国际版客户端写出，插件不代填",
     "trae": "凭证由 TRAE 客户端登录后写入 globalStorage，插件不代填",
-    "dumate": "凭证是 AES-256-GCM 加密的 Cookie，由 DuMate 客户端登录后写出",
-    "qwenwork": "凭证由千问办公客户端登录后写出，插件不代填",
-    "phanthywork": "凭证在 WebView2 的 leveldb 里，由 PhanthyWork 客户端登录后写出",
     "kling": "本插件没有可调用的领取接口，录凭证也没有用",
 }
 
@@ -456,9 +446,8 @@ def main() -> int:
     # 按路径加载适配器包，避免与 PyPI 同名包冲突。
     sys.path.insert(0, home)
     try:
-        from adapters import (dumate, jimeng, kling, lingxi,  # noqa: E402
-                              phanthywork, qwenwork, trae, workbuddy,
-                              workbuddy_intl)
+        from adapters import (jimeng, kling, lingxi, trae,  # noqa: E402
+                              workbuddy, workbuddy_intl)
     except Exception as exc:  # noqa: BLE001
         return fail(f"导入适配器失败：{type(exc).__name__}: {exc}")
 
@@ -468,10 +457,7 @@ def main() -> int:
         "trae": trae,
         "lingxi": lingxi,
         "jimeng": jimeng,
-        "qwenwork": qwenwork,
-        "phanthywork": phanthywork,
         "kling": kling,
-        "dumate": dumate,
     }
 
     keys = [k.strip() for k in args.only.split(",") if k.strip()] or list(PLATFORM_SPECS)
