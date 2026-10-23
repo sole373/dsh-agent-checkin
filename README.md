@@ -1,6 +1,6 @@
 # dsh-agent-checkin
 
-> Daily check-in aggregation and model wiring for DeepSeek Harness — one plugin, two jobs.
+> One plugin, two jobs: run every installed AI client's daily check-in from inside DeepSeek Harness, and wire those clients' models into DSH — with a loopback-only dashboard.
 
 English | [中文](README-zh.md) | [Español](README-es.md) | [Português](README-pt.md) | [हिन्दी](README-hi.md)
 
@@ -54,7 +54,7 @@ from this machine only). It touches none of the above — see
 
 ## Requirements
 
-- DSH `0.2.x`.
+- **DSH `0.2.x`** (host with cordis 4.x).
 - Python 3.9+ on `PATH` (only for the check-in half).
 - Node 22.19+ or 24+ with the built-in `node:sqlite` module (only for `traeProvider`).
 - The engine itself is **bundled** in this package under `engine/` — nothing extra to install.
@@ -62,8 +62,16 @@ from this machine only). It touches none of the above — see
 
 ## Installation
 
+From the plugin market (once the npm package is published):
+
 ```bash
-dsh plugin install ./dsh-agent-checkin
+dsh plugin --profile web add @sole373/dsh-agent-checkin
+```
+
+Or install straight from the source repository:
+
+```bash
+dsh plugin --profile web add github:sole373/dsh-agent-checkin
 ```
 
 Or add it to a profile manually:
@@ -72,8 +80,16 @@ Or add it to a profile manually:
 # ~/.dsh/profiles/<name>/cordis.patch.yml
 - insert:
     - id: dsh-agent-checkin
-      name: dsh-agent-checkin
+      name: '@sole373/dsh-agent-checkin'
 ```
+
+## What it looks like
+
+| The check-in dashboard | Platforms & models settings |
+| --- | --- |
+| ![Check-in dashboard](docs/dashboard.png) | ![Platforms & models settings](docs/settings-models.png) |
+
+![Token usage panel](docs/token-usage.png)
 
 ## Usage
 
