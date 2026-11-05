@@ -24,7 +24,7 @@ jobs:
         run: npm install -g npm@^11
 
       - name: 校验 tag 与 package.json 版本一致
-        if: startsWith(github.ref, "refs/tags/v")
+        if: startsWith(github.ref, 'refs/tags/v')
         run: |
           set -euo pipefail
           tag="${GITHUB_REF_NAME#v}"
@@ -50,5 +50,5 @@ jobs:
           fi
 
       - name: 发布到 npm（OIDC 可信发布，自动 provenance）
-        if: steps.guard.outputs.skip != "true"
+        if: steps.guard.outputs.skip != 'true'
         run: npm publish --access public
