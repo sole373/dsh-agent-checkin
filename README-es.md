@@ -1,5 +1,7 @@
 # dsh-agent-checkin
 
+[![GitHub stars](https://img.shields.io/github/stars/sole373/dsh-agent-checkin?style=social)](https://github.com/sole373/dsh-agent-checkin/stargazers)
+
 > Registro diario agregado y conexión de modelos para DeepSeek Harness — un plugin, tres tareas.
 
 [English](README.md) | [中文](README-zh.md) | Español | [Português](README-pt.md) | [हिन्दी](README-hi.md)

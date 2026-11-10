@@ -1,5 +1,7 @@
 # dsh-agent-checkin
 
+[![GitHub stars](https://img.shields.io/github/stars/sole373/dsh-agent-checkin?style=social)](https://github.com/sole373/dsh-agent-checkin/stargazers)
+
 > DeepSeek Harness के लिए दैनिक चेक-इन एकत्रीकरण और मॉडल कनेक्शन — एक प्लगइन, तीन काम।
 
 [English](README.md) | [中文](README-zh.md) | [Español](README-es.md) | [Português](README-pt.md) | हिन्दी

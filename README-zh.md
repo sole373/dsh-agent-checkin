@@ -1,5 +1,7 @@
 # dsh-agent-checkin
 
+[![GitHub stars](https://img.shields.io/github/stars/sole373/dsh-agent-checkin?style=social)](https://github.com/sole373/dsh-agent-checkin/stargazers)
+
 > DeepSeek Harness 的每日签到聚合 + 模型接入插件 —— 一个插件，三件事。
 
 [English](README.md) | 中文 | [Español](README-es.md) | [Português](README-pt.md) | [हिन्दी](README-hi.md)

@@ -1,5 +1,7 @@
 # dsh-agent-checkin
 
+[![GitHub stars](https://img.shields.io/github/stars/sole373/dsh-agent-checkin?style=social)](https://github.com/sole373/dsh-agent-checkin/stargazers)
+
 > One plugin, two jobs: run every installed AI client's daily check-in from inside DeepSeek Harness, and wire those clients' models into DSH — with a loopback-only dashboard.
 
 English | [中文](README-zh.md) | [Español](README-es.md) | [Português](README-pt.md) | [हिन्दी](README-hi.md)
